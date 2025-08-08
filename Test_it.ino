@@ -1,31 +1,31 @@
-// Definições de pinos
-const int BOIA_PIN = 7;           // Sensor para detectar o nível de água (reed switch)
-const int VALVE_PIN = 9;          // Relé para controlar a válvula
-const int USER_INPUT_NORMAL_PIN = 10; // Entrada do usuário para o modo "Normal"
-const int USER_INPUT_EXTRA_PIN = 11;  // Entrada do usuário para o modo "Extra"
-const int LED_PIN = 13;           // LED para indicar o status do sistema
-const int LED_NORMAL = 4;         // LED indicar modo "Normal"
-const int LED_EXTRA = 6;          // LED indicar modo "Extra"
+// Pin definitions
+const int BOIA_PIN = 7;           // Sensor to detect water level (reed switch)
+const int VALVE_PIN = 9;          // Relay to control the valve
+const int USER_INPUT_NORMAL_PIN = 10; // User input for "Normal" mode
+const int USER_INPUT_EXTRA_PIN = 11;  // User input for "Extra" mode
+const int LED_PIN = 13;           // LED to indicate system status
+const int LED_NORMAL = 4;         // LED to indicate "Normal" mode
+const int LED_EXTRA = 6;          // LED to indicate "Extra" mode
 
-// Variáveis de estado do sistema
-int flowCount = 0;                  // Rastrea o número de fluxos detectados
-bool saveOnSecondFlow = false;      // Economiza no 2º fluxo flag
-bool saveOnThirdFlow = false;       // Economiza no 3º fluxo flag
-int currentMode = 0;                // 0: Nenhum, 1: Normal, 2: Extra, 3: Ambos, 4: Failsafe
+// System state variables
+int flowCount = 0;                  // Tracks the number of detected flows
+bool saveOnSecondFlow = false;      // Save water on the 2nd flow flag
+bool saveOnThirdFlow = false;       // Save water on the 3rd flow flag
+int currentMode = 0;                // 0: None, 1: Normal, 2: Extra, 3: Both, 4: Failsafe
 
-// Variáveis para controle de economia
+// Economy control variables
 bool economiaAtiva = false;
-bool aguardandoTerceiroFluxo = false;   // NOVA VARIÁVEL: Sinaliza que já economizou no 2º e aguarda o 3º
-bool economiaNoTerceiroFluxoAtiva = false; // Sinaliza que a economia do terceiro fluxo está ativa
+bool aguardandoTerceiroFluxo = false;   // Indicates that 2nd flow saving occurred and 3rd flow is awaited
+bool economiaNoTerceiroFluxoAtiva = false; // Indicates that the 3rd flow saving is active
 
-// Debounce e detecção de transição do sensor boia
-int stableBoiaState = LOW;          // Estado estável atual do sensor boia
-int lastBoiaReading = LOW;          // Última leitura do sensor boia
-bool boiaPreviouslyHigh = false;    // Flag para controlar a transição LOW -> HIGH
-unsigned long lastDebounceTime = 0;
+// Debounce and transition detection for the float sensor
+int stableBoiaState = LOW;          // Current stable state of the float sensor
+int lastBoiaReading = LOW;          // Last reading from the float sensor
+bool boiaPreviouslyHigh = false;    // Flag to control LOW -> HIGH transition
+unsigned long lastDebounceTime = 0; // unsigned long is used to have more bits to hold more time within the milis function and the milis return a unsigned long value
 const unsigned long debounceDelay = 1000;
 
-// Variáveis para evitar flood no Serial (isso ajuda BASTANTE)
+// Variables to avoid flooding the Serial monitor (helps A LOT)
 bool lastEconomiaAtivaPrinted = false;
 int lastFlowCountPrinted = -1;
 
@@ -45,10 +45,10 @@ void setup() {
   digitalWrite(LED_EXTRA, LOW);
 
   Serial.println(F("\n===================================="));
-  Serial.println(F("🔧 SISTEMA DE ECONOMIA DE ÁGUA INICIADO"));
-  Serial.println(F("▶ Válvula: ABERTA"));
-  Serial.println(F("▶ LED Principal: LIGADO"));
-  Serial.println(F("▶ Aguardando seleção de modo pelo usuário..."));
+  Serial.println(F("🔧 WATER SAVING SYSTEM STARTED"));
+  Serial.println(F("▶ Valve: OPEN"));
+  Serial.println(F("▶ Main LED: ON"));
+  Serial.println(F("▶ Waiting for user mode selection..."));
   Serial.println(F("====================================\n"));
 }
 
@@ -59,23 +59,23 @@ void loop() {
     if (!lastEconomiaAtivaPrinted) {
       Serial.print("⏳ [");
       Serial.print(millis() / 1000);
-      Serial.println("s] Economia ativada. Válvula FECHADA até reservatório esvaziar.");
+      Serial.println("s] Economy activated. Valve CLOSED until reservoir empties.");
       lastEconomiaAtivaPrinted = true;
     }
 
     int boiaAtual = digitalRead(BOIA_PIN);
     if (boiaAtual == LOW) {
-      Serial.println(F("✅ Reservatório esvaziou. Economia finalizada."));
+      Serial.println(F("✅ Reservoir emptied. Economy finished."));
       
-      // Se a economia era do segundo fluxo e estamos no modo 3, aguardamos o terceiro fluxo
+      // If the saving was for the second flow and we are in mode 3, wait for the third flow
       if (currentMode == 3 && flowCount == 2 && !economiaNoTerceiroFluxoAtiva) {
-        Serial.println(F("⏳ Aguardando próximo fluxo antes de resetar (modo NORMAL + EXTRA)."));
+        Serial.println(F("⏳ Waiting for next flow before resetting (NORMAL + EXTRA mode)."));
         aguardandoTerceiroFluxo = true;
-        economiaAtiva = false; // Desativa a economia para permitir o próximo fluxo
-        digitalWrite(VALVE_PIN, HIGH); // Abre a válvula
-        digitalWrite(LED_PIN, HIGH);   // Acende o LED principal
+        economiaAtiva = false; // Disable saving to allow the next flow
+        digitalWrite(VALVE_PIN, HIGH); // Open the valve
+        digitalWrite(LED_PIN, HIGH);   // Turn on main LED
       } else {
-        // Se a economia era do terceiro fluxo (no modo 3) ou qualquer outra economia, reseta
+        // If saving was for the third flow (in mode 3) or any other saving, reset
         resetSystem();
       }
     }
@@ -84,8 +84,8 @@ void loop() {
     lastEconomiaAtivaPrinted = false;
   }
   
-  // A verificação de reset para o modo 3 precisa ocorrer após a economia do terceiro fluxo.
-  // Isso foi movido para dentro de lidarComReservatorioCheio() para um controle mais preciso.
+  // Reset check for mode 3 must occur after the third flow saving.
+  // This was moved into lidarComReservatorioCheio() for more precise control.
   
   delay(10);
 }
@@ -107,44 +107,44 @@ void lidarComEntradaUsuario() {
 
   if (newMode != currentMode) {
     currentMode = newMode;
-    resetSystem(); // Sempre reseta ao mudar o modo para garantir um estado limpo
+    resetSystem(); // Always reset when changing mode to ensure a clean state
 
-    Serial.println(F("\n================ MODO ALTERADO ================"));
+    Serial.println(F("\n================ MODE CHANGED ================"));
     switch (currentMode) {
       case 0:
         saveOnSecondFlow = false;
         saveOnThirdFlow = false;
         digitalWrite(LED_NORMAL, LOW);
         digitalWrite(LED_EXTRA, LOW);
-        Serial.println(F("ℹ️ Nenhum modo selecionado. Sistema desativado."));
+        Serial.println(F("ℹ️ No mode selected. System deactivated."));
         break;
       case 1:
         saveOnSecondFlow = true;
         saveOnThirdFlow = false;
         digitalWrite(LED_NORMAL, HIGH);
         digitalWrite(LED_EXTRA, LOW);
-        Serial.println(F("✅ MODO NORMAL: Economiza no 2º fluxo."));
+        Serial.println(F("✅ NORMAL MODE: Saves on 2nd flow."));
         break;
       case 2:
         saveOnSecondFlow = false;
         saveOnThirdFlow = true;
         digitalWrite(LED_NORMAL, LOW);
         digitalWrite(LED_EXTRA, HIGH);
-        Serial.println(F("✅ MODO EXTRA: Economiza no 3º fluxo."));
+        Serial.println(F("✅ EXTRA MODE: Saves on 3rd flow."));
         break;
       case 3:
         saveOnSecondFlow = true;
         saveOnThirdFlow = true;
         digitalWrite(LED_NORMAL, HIGH);
         digitalWrite(LED_EXTRA, HIGH);
-        Serial.println(F("✅ MODO NORMAL + EXTRA: Economiza no 2º e 3º fluxo."));
+        Serial.println(F("✅ NORMAL + EXTRA MODE: Saves on 2nd and 3rd flow."));
         break;
       case 4:
         saveOnSecondFlow = false;
         saveOnThirdFlow = false;
         digitalWrite(LED_NORMAL, LOW);
         digitalWrite(LED_EXTRA, LOW);
-        Serial.println(F("⚠️ MODO 0: Sistema desativado.")); // Antigo "Failsafe", mas 0 já é desativado
+        Serial.println(F("⚠️ MODE 0: System deactivated.")); // Former "Failsafe", but 0 is already deactivated
         break;
     }
     Serial.println(F("================================================\n"));
@@ -166,11 +166,11 @@ void monitorarSensorBoia() {
       if (stableBoiaState == HIGH && !boiaPreviouslyHigh) {
         boiaPreviouslyHigh = true;
         lidarComReservatorioCheio();
-        // Não precisamos da lógica de reset do terceiro fluxo aqui, pois lidarComReservatorioCheio
-        // vai chamar resetSystem no momento certo para o modo 3.
+        // We don't need the third flow reset logic here, because lidarComReservatorioCheio
+        // will call resetSystem at the right moment for mode 3.
       } else if (stableBoiaState == LOW) {
         if (economiaAtiva) {
-          Serial.println(F("💧 Sensor indica que reservatório está vazio (LOW)."));
+          Serial.println(F("💧 Sensor indicates reservoir is empty (LOW)."));
         }
         boiaPreviouslyHigh = false;
       }
@@ -184,64 +184,64 @@ void lidarComReservatorioCheio() {
   if (flowCount != lastFlowCountPrinted) {
     Serial.print("💦 [");
     Serial.print(millis() / 1000);
-    Serial.print("s] Novo fluxo detectado: ");
+    Serial.print("s] New flow detected: ");
     Serial.println(flowCount);
     lastFlowCountPrinted = flowCount;
   }
 
   bool shouldSave = false;
-  // Lógica para modo 3 (Economiza no 2º e 3º fluxo)
+  // Logic for mode 3 (Saves on 2nd and 3rd flow)
   if (currentMode == 3) {
     if (flowCount == 2 && saveOnSecondFlow) {
       shouldSave = true;
-      economiaNoTerceiroFluxoAtiva = false; // Garante que a flag esteja correta
+      economiaNoTerceiroFluxoAtiva = false; // Ensure flag is correct
     } else if (flowCount == 3 && saveOnThirdFlow && aguardandoTerceiroFluxo) {
       shouldSave = true;
-      economiaNoTerceiroFluxoAtiva = true; // Ativa a flag para indicar economia no terceiro fluxo
+      economiaNoTerceiroFluxoAtiva = true; // Activate flag to indicate saving on third flow
     }
   } 
-  // Lógica para outros modos (Normal e Extra)
+  // Logic for modes Normal and Extra
   else if (currentMode == 1 && flowCount == 2 && saveOnSecondFlow) {
     shouldSave = true;
   } else if (currentMode == 2 && flowCount == 3 && saveOnThirdFlow) {
     shouldSave = true;
   }
   
-  if (currentMode == 0 || currentMode == 4) { // Modos desativados
+  if (currentMode == 0 || currentMode == 4) { // Disabled modes
     shouldSave = false;
   }
 
   if (shouldSave) {
-    Serial.print("🚫 Fluxo ");
+    Serial.print("🚫 Flow ");
     Serial.print(flowCount);
-    Serial.println(" requer economia. Válvula fechando.");
+    Serial.println(" requires saving. Closing valve.");
     digitalWrite(VALVE_PIN, LOW);
     digitalWrite(LED_PIN, LOW);
     economiaAtiva = true;
-    aguardandoTerceiroFluxo = false; // Zera essa flag quando a economia é ativada
+    aguardandoTerceiroFluxo = false; // Reset this flag when saving is activated
   } else {
-    // Se a válvula estiver fechada e não houver economia ativa, reabrir
+    // If the valve is closed and there is no active saving, reopen
     if (digitalRead(VALVE_PIN) == LOW && !economiaAtiva) {
       digitalWrite(VALVE_PIN, HIGH);
       digitalWrite(LED_PIN, HIGH);
-      Serial.println(F("🔓 Válvula reaberta. Sem economia ativa."));
+      Serial.println(F("🔓 Valve reopened. No active saving."));
     }
-    Serial.print("➕ Fluxo ");
+    Serial.print("➕ Flow ");
     Serial.print(flowCount);
-    Serial.println(" não requer economia.");
+    Serial.println(" does not require saving.");
   }
 }
 
 void resetSystem() {
   flowCount = 0;
   economiaAtiva = false;
-  digitalWrite(VALVE_PIN, HIGH); // Válvula aberta
-  digitalWrite(LED_PIN, HIGH);   // Led ligado
-  lastFlowCountPrinted = -1;
-  lastEconomiaAtivaPrinted = false;
+  digitalWrite(VALVE_PIN, HIGH); // Valve open
+  digitalWrite(LED_PIN, HIGH);   // LED on
+  lastFlowCountPrinted = -1; // Ensures that the next flow (0) prints!
+  lastEconomiaAtivaPrinted = false; // Ensures the next cycle message will be printed
   boiaPreviouslyHigh = false;
   aguardandoTerceiroFluxo = false; 
   economiaNoTerceiroFluxoAtiva = false; 
 
-  Serial.println(F("\n🔄 Sistema resetado: contadores zerados, válvula aberta, LED ligado.\n"));
+  Serial.println(F("\n🔄 System reset: counters cleared, valve open, LED on.\n"));
 }
