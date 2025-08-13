@@ -1,0 +1,38 @@
+--> Sistema de Reaproveitamento de Água Cinza com Automação Arduino
+Este projeto tem como objetivo desenvolver um sistema de baixo custo para reaproveitamento da água cinza proveniente de máquinas de lavar roupa, utilizando Arduino Pro Mini para automação e controle do fluxo.
+A proposta é oferecer uma solução sustentável, acessível e replicável, especialmente voltada para comunidades de baixa renda, promovendo a economia de recursos hídricos e a redução de gastos domésticos.
+
+--> Funcionalidades
+Seleção de ciclos de reaproveitamento: permite escolher se o sistema reutiliza apenas o segundo ciclo da lavagem ou também o enxágue extra.
+
+Controle automático de nível: sensor de boia com reed switch para evitar transbordamentos e proteger a bomba/solenóide.
+
+Automação com Arduino Pro Mini: separação inteligente dos fluxos e acionamento automático da válvula via módulo de relé.
+
+Baixo custo e fácil replicação: arquitetura simples, componentes acessíveis e código aberto.
+
+--> Componentes principais
+Arduino Pro Mini
+
+Módulo de relé
+
+Boia com reed switch (sensor de nível)
+
+Switch HH de 2 posições (seleção de ciclos)
+
+Eletroválvula solenóide
+
+Barramentos (jumpers e fios)
+
+Resistores
+
+
+--> Impacto e propósito
+Este projeto se alinha aos Objetivos de Desenvolvimento Sustentável (ODS) da ONU, especialmente:
+
+ODS 6: Água potável e saneamento
+
+ODS 12: Consumo e produção responsáveis
+
+ODS 13: Ação contra a mudança global do clima
+
